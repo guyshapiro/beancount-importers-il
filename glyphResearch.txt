@@ -1,0 +1,72 @@
+My current effort is to extract data from tabular PDF files, in Hebrew.
+
+In general, extracting text from PDF files is not a trivial task. Unlike other
+formats which store the text in structure that is human meaningful, the PDF
+format just tells where every character should be printed.
+The are several open source projects that aim to extract tabular data from PDF.
+
+[Camelot](https://github.com/socialcopsdev/camelot) is a recent (git starts in
+9/18) project doing so. It is written in python. It depends both on the
+pdfminer and PyPDF2 libraries for PDF parsing, and on openCV for some fancy
+table position recognition.
+[Tabula](https://github.com/tabulapdf/tabula) project is an older project aiming
+the same target. Its core is written in Java, utilizing Apache's pdfbox for the
+PDF parsing.
+[PDFPlumber](https://github.com/jsvine/pdfplumber) is a python, pdfminer based
+library, that provides a nice API for accessing PDF data. It also includes an
+option to extract tabular data semi-automatically.
+
+I decided to base my solution on PDFPlumber. I liked the fact it is Python
+based, and the options to manually inspect the document and set borders.
+It should be noted that the underling PDF library, pdfminer, has a maintenance
+problem. The original library is unmaintained, and doesn't support Python 3. A
+fork that added a Py3 support,
+[pdfminer.six](https://github.com/pdfminer/pdfminer.six) isn't appear very
+active as well. There is a relatively new fork named
+[pdfmajor](https://github.com/asosnovsky/pdfmajor) but it is not clear whether
+it will outlast.
+
+When trying to extract my data using PDFPlumber, I discovered the issues with
+PDFs in Hebrew.
+
+The PDF format (at least on the files I need) doesn't contain the characters
+encoded in Unicode, or any other standard character encoding. Instead it
+contains embedded fonts, with instructions for rendering of each 'Glyph'. Every
+character on the page contains a reference to a Glyph inside an embedded
+font.
+
+The embedded fonts have, together with the glyph rendering data, a name for each
+glyph. Those names are used by PDF viewers when they need to interpret the
+characters as normal text (E.G., find functionality, copy&paste functionality).
+
+The problem is that those glyph names are not really standard, especially for
+esoteric languages such as Hebrew. As far as I can tell, the names are set by
+the font creation software.
+
+The most common glyph list is the Adobe Glyph List (AGL).
+https://github.com/adobe-type-tools/agl-aglfn
+
+The best glyph list is in the ghostScript project. It supports the final Hebrew
+letters in my first document. It has a problematic license.
+http://git.ghostscript.com/?p=ghostpdl.git;a=blob;f=Resource/Decoding/Unicode;hb=HEAD
+
+Another list with the "memfinal" appears in the fontforge project.
+This list is shorter than the GS list, but is contains some names that doesn't
+appear in the GS list.
+https://github.com/fontforge/fontforge/blob/master/fontforge/namelist.c
+
+https://github.com/mozilla/pdf.js/blob/master/src/core/glyphlist.js
+https://github.com/apache/pdfbox/tree/trunk/pdfbox/src/main/resources/org/apache/pdfbox/resources/glyphlist
+
+Some extraction of IBM's gcgid codes - Python script and CSV.
+Those made by Aur from Fizzback, who probably worked on a similar problem.
+https://gist.github.com/SonOfLilit/2a144d525b32978fd3ae1adddd27d621
+Another list of CGID codes:
+http://www.borgendale.com/glyphs.htm
+The IBM site with the information is down, but archived in archive.org
+https://web.archive.org/web/20160304055655/http://www-01.ibm.com/software/globalization/gcgid/gcgid.html
+Conversion of non-unicode encodings to IBM GCGIDs
+ftp://ftp.software.ibm.com/software/globalization/gcoc/attachments/
+
+Explanation about glyph names on SO:
+https://stackoverflow.com/a/36034529
